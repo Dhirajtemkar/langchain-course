@@ -1,47 +1,39 @@
-from typing import List
-
-from pydantic import BaseModel, Field
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
 from langchain.agents import create_agent
 from langchain.tools import tool
-from langchain_core.messages import HumanMessage
-from langchain_openai import ChatOpenAI
-from langchain_tavily import TavilySearch
+from langchain.messages import HumanMessage
+from langchain_ollama import ChatOllama
+from tavily import TavilyClient
+from langsmith import traceable
 
+tavily = TavilyClient()
 
-class Source(BaseModel):
-    """Schema for a source used by the agent"""
+@tool
+def search_tool(query:str) -> str:
+    """
+    This is a search tool to search on the internet.
+    args:
+        query - string query to search on the internet
+    result: string output of the search 
+    """
+    return tavily.search(query=query)
 
-    url: str = Field(description="The URL of the source")
+llm = ChatOllama(model="gpt-oss:20b", temperature=0)
+tools = [search_tool]
+search_agent = create_agent(
+    model=llm,
+    tools=tools,
+    system_prompt="You are a search agent and you will use the search_tool to perform search on users query"
+)
 
-
-class AgentResponse(BaseModel):
-    """Schema for agent response with answer and sources"""
-
-    answer: str = Field(description="Thr agent's answer to the query")
-    sources: List[Source] = Field(
-        default_factory=list, description="List of sources used to generate the answer"
-    )
-
-
-llm = ChatOpenAI(model="gpt-5")
-tools = [TavilySearch()]
-agent = create_agent(model=llm, tools=tools, response_format=AgentResponse)
-
-
+@traceable
 def main():
     print("Hello from langchain-course!")
-    result = agent.invoke(
-        {
-            "messages": HumanMessage(
-                content="search for 3 job postings for an ai engineer using langchain in the bay area on linkedin and list their details?"
-            )
-        }
-    )
-    print(result)
-
+    response = search_agent.invoke({"messages":[HumanMessage(content="Can you let me know the weather in Mumbai.")]})
+    print(response)
 
 if __name__ == "__main__":
     main()
