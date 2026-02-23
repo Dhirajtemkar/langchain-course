@@ -3,10 +3,11 @@ import os
 from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
+from langsmith import traceable
 
 load_dotenv()
 
-
+@traceable
 def main():
     print("Hello from langchain-course!")
 
