@@ -1,38 +1,34 @@
 import os
-from langchain_community.document_loaders import TextLoader
-from langchain_pinecone import PineconeVectorStore
-from langchain_ollama import OllamaEmbeddings
-from langchain_text_splitters import CharacterTextSplitter 
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
+from langchain_community.document_loaders import TextLoader
+from langchain_ollama import OllamaEmbeddings
+from langchain_pinecone import PineconeVectorStore
+from langchain_text_splitters import CharacterTextSplitter
 
 load_dotenv()
 
-embedding_model = "nomic-embed-text"
-pinecone_index = "langchain-course-01"
+embedding_model = os.environ["EMBEDDING_MODEL"]
+pinecone_index = os.environ["PINECONE_INDEX"]
 
-if __name__ == '__main__':
-    
+if __name__ == "__main__":
+
     # Loading the document as langchain Document Object
-    loader = TextLoader("./mediumblog1.txt", encoding='utf8')
+    loader = TextLoader("./mediumblog1.txt", encoding="utf8")
     document = loader.load()
 
-    #Chunking
-    text_splitter = CharacterTextSplitter(
-        chunk_size=1000, 
-        chunk_overlap=0
-    )
+    # Chunking
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
 
     chunks = text_splitter.split_documents(documents=document)
 
-    #Initialize Embedding model for Embedding chunks
+    # Initialize Embedding model for Embedding chunks
     embedding = OllamaEmbeddings(model=embedding_model)
 
     # Send embedded chunks to Pinecone Vector Db index
     print("Ingesting...")
     PineconeVectorStore.from_documents(
-        chunks,
-        embedding=embedding,
-        index_name=pinecone_index
+        chunks, embedding=embedding, index_name=pinecone_index
     )
 
+    print("Ingestions created in Vector store.")
